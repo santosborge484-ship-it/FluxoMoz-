@@ -1,5 +1,6 @@
-const User = require('../models/User');
-const generateToken = require('../utils/generateToken');
+// Caminhos corrigidos para a mesma pasta
+const User = require('./user');
+const generateToken = require('./generateToken');
 
 // @desc    Registar novo vendedor
 // @route   POST /api/auth/register
@@ -8,7 +9,6 @@ exports.registerUser = async (req, res) => {
     try {
         const { name, email, password, phone } = req.body;
 
-        // Verifica se o vendedor já existe pelo email ou telefone
         const userExists = await User.findOne({ $or: [{ email }, { phone }] });
 
         if (userExists) {
@@ -18,11 +18,9 @@ exports.registerUser = async (req, res) => {
             });
         }
 
-        // Gera um código de afiliado único baseado no nome e num número aleatório
         const baseName = name.split(' ')[0].toUpperCase();
         const affiliateCode = `${baseName}${Math.floor(1000 + Math.random() * 9000)}`;
 
-        // Cria o vendedor
         const user = await User.create({
             name,
             email,
@@ -57,7 +55,6 @@ exports.authUser = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        // Encontra o vendedor pelo e-mail e força o Mongoose a trazer a senha para comparação
         const user = await User.findOne({ email }).select('+password');
 
         if (user && (await user.matchPassword(password))) {
