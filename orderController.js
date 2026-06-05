@@ -1,4 +1,4 @@
-const Order = require('./order'); // Importa os modelos na raiz
+const Order = require('./Order'); // Importa os modelos na raiz
 const Product = require('./product');
 const User = require('./user');
 

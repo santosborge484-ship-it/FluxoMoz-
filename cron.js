@@ -1,5 +1,5 @@
 const cron = require('node-cron');
-const Order = require('./order'); // Modelos na raiz
+const Order = require('./Order'); // Modelos na raiz
 const User = require('./user');
 
 // Agendamento estrito: Executa a cada 24 horas (à meia-noite)
