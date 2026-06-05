@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "SaaS Fintech Platform para Mocambique",
   "main": "server.js",
+  "license": "UNLICENSED",
   "scripts": {
     "start": "node server.js"
   },
@@ -14,5 +15,8 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.4.0",
     "node-cron": "^3.0.3"
+  },
+  "resolutions": {
+    "uuid": "^11.0.0"
   }
 }
