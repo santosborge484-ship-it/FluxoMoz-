@@ -2,14 +2,15 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 
-// Importações locais (tudo na raiz)
+// Importações locais
 const connectDB = require('./db');
 const authRoutes = require('./authRoutes');
 const productRoutes = require('./productRoutes');
 const orderRoutes = require('./orderRoutes');
-const walletRoutes = require('./walletRoutes'); // Importado a Carteira
-const kycRoutes = require('./kycRoutes');       // Importado o KYC
-require('./cron'); // Inicia o Cron Job (Motor de Garantia 24h)
+const walletRoutes = require('./walletRoutes'); 
+const kycRoutes = require('./kycRoutes');       
+const dashboardRoutes = require('./dashboardRoutes'); // NOVO: Módulo do Dashboard
+require('./cron'); 
 
 // Inicializa a aplicação Express
 const app = express();
@@ -17,9 +18,10 @@ const app = express();
 // Conectar ao Banco de Dados MongoDB
 connectDB();
 
-// Middlewares Globais
+// Middlewares Globais - COM PROTEÇÃO OOM (Limite de 10MB)
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' })); 
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // === ROTAS DA API FLUXOMOZ ===
 app.use('/api/auth', authRoutes);
@@ -27,12 +29,13 @@ app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use('/api/kyc', kycRoutes);
+app.use('/api/dashboard', dashboardRoutes); // NOVO: Rota do Dashboard ativa
 
 // Rota Base de Verificação
 app.get('/', (req, res) => {
     res.status(200).json({
         status: 'success',
-        message: 'API FluxoMoz operacional.',
+        message: 'API FluxoMoz operacional e blindada.',
         environment: process.env.NODE_ENV
     });
 });

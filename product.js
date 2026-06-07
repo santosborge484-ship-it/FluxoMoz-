@@ -4,7 +4,7 @@ const productSchema = new mongoose.Schema({
     vendor: {
         type: mongoose.Schema.ObjectId,
         ref: 'User',
-        required: true // O produto tem que pertencer a um vendedor
+        required: true
     },
     name: {
         type: String,
@@ -26,8 +26,19 @@ const productSchema = new mongoose.Schema({
     stock: {
         type: Number,
         required: [true, 'Quantidade em estoque é obrigatória'],
-        min: 0 // Impede estoque negativo
+        min: 0 
     },
+    // NOVOS CAMPOS: Visuais e Logísticos
+    image: {
+        type: String // URL da imagem em base64 ou link externo
+    },
+    category: {
+        type: String
+    },
+    deliveryOptions: [{
+        name: { type: String }, // Ex: "Levantamento", "Entrega Local"
+        fee: { type: Number, default: 0 } // Preço em MZN
+    }],
     status: {
         type: String,
         enum: ['ativo', 'sem_estoque', 'oculto'],
@@ -35,17 +46,27 @@ const productSchema = new mongoose.Schema({
     },
     paymentLink: {
         type: String,
-        unique: true // Ex: abc123xyz gerado automaticamente
+        unique: true
     },
-    // Apenas para produtos digitais (Link enviado após pagamento)
     digitalFileUrl: {
         type: String,
         select: false 
     },
     affiliateCommissionPercent: {
         type: Number,
-        default: 0, // Se 0, não está na vitrine de afiliados
-        max: 80 // Limite de comissão para proteger o vendedor
+        default: 0, 
+        max: 80 
+    },
+    // NOVO CAMPO: Estatísticas de Marketing (UTM Tracking)
+    stats: {
+        clicks: { type: Number, default: 0 },
+        sources: {
+            whatsapp: { type: Number, default: 0 },
+            facebook: { type: Number, default: 0 },
+            instagram: { type: Number, default: 0 },
+            tiktok: { type: Number, default: 0 },
+            other: { type: Number, default: 0 }
+        }
     }
 }, {
     timestamps: true

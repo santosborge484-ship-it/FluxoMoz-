@@ -1,17 +1,16 @@
-const Product = require('./product'); // Importa o modelo que está na raiz
+const Product = require('./product');
 
 // @desc    Criar um novo produto
 // @route   POST /api/products
-// @access  Private (Apenas vendedores logados)
+// @access  Private
 exports.createProduct = async (req, res) => {
     try {
-        const { name, description, price, productType, stock, affiliateCommissionPercent } = req.body;
+        // Recebe os novos campos do frontend
+        const { name, description, price, productType, stock, image, category, deliveryOptions, affiliateCommissionPercent } = req.body;
 
-        // Gera um código único para o link de pagamento (Ex: fluxo-xyz123)
         const randomString = Math.random().toString(36).substring(2, 8);
         const paymentLink = `fluxo-${randomString}`;
 
-        // Cria o produto no banco de dados e atrela-o ao ID do vendedor (req.user vem do authMiddleware)
         const product = await Product.create({
             vendor: req.user._id,
             name,
@@ -19,14 +18,14 @@ exports.createProduct = async (req, res) => {
             price,
             productType,
             stock,
+            image,
+            category,
+            deliveryOptions,
             paymentLink,
             affiliateCommissionPercent: affiliateCommissionPercent || 0
         });
 
-        res.status(201).json({
-            status: 'success',
-            data: product
-        });
+        res.status(201).json({ status: 'success', data: product });
     } catch (error) {
         res.status(500).json({ status: 'error', message: 'Erro ao criar produto: ' + error.message });
     }
@@ -37,36 +36,38 @@ exports.createProduct = async (req, res) => {
 // @access  Private
 exports.getMyProducts = async (req, res) => {
     try {
-        // Encontra apenas os produtos onde o campo 'vendor' seja igual ao ID do usuário atual
         const products = await Product.find({ vendor: req.user._id }).sort({ createdAt: -1 });
-
-        res.status(200).json({
-            status: 'success',
-            count: products.length,
-            data: products
-        });
+        res.status(200).json({ status: 'success', count: products.length, data: products });
     } catch (error) {
         res.status(500).json({ status: 'error', message: 'Erro ao buscar produtos: ' + error.message });
     }
 };
 
-// @desc    Obter detalhes de UM produto pelo Link de Pagamento (Público)
-// @route   GET /api/products/link/:paymentLink
-// @access  Public (Usado na página de Checkout do cliente)
+// @desc    Obter detalhes de UM produto (Público) & Registar Clique/Origem
+// @route   GET /api/products/link/:paymentLink?source=whatsapp
+// @access  Public
 exports.getProductByLink = async (req, res) => {
     try {
-        // Busca o produto e inclui também o nome do vendedor que o criou
         const product = await Product.findOne({ paymentLink: req.params.paymentLink })
                                      .populate('vendor', 'name');
 
         if (!product) {
-            return res.status(404).json({ status: 'error', message: 'Produto não encontrado ou link inválido.' });
+            return res.status(404).json({ status: 'error', message: 'Produto não encontrado.' });
         }
 
-        res.status(200).json({
-            status: 'success',
-            data: product
-        });
+        // LÓGICA DE RASTREAMENTO DE MARKETING
+        const source = req.query.source ? req.query.source.toLowerCase() : 'other';
+        
+        // Atualiza os cliques no banco de dados
+        product.stats.clicks += 1;
+        if (product.stats.sources[source] !== undefined) {
+            product.stats.sources[source] += 1;
+        } else {
+            product.stats.sources.other += 1;
+        }
+        await product.save();
+
+        res.status(200).json({ status: 'success', data: product });
     } catch (error) {
         res.status(500).json({ status: 'error', message: 'Erro no servidor: ' + error.message });
     }
