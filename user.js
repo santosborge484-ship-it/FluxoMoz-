@@ -4,63 +4,80 @@ const bcrypt = require('bcryptjs');
 const userSchema = new mongoose.Schema({
     name: {
         type: String,
-        required: [true, 'Nome completo é obrigatório']
+        required: [true, 'O nome é obrigatório'],
+        trim: true
     },
     email: {
         type: String,
-        required: [true, 'E-mail é obrigatório'],
+        required: [true, 'O e-mail é obrigatório'],
         unique: true,
-        match: [/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/, 'E-mail inválido']
+        lowercase: true,
+        match: [/^\S+@\S+\.\S+$/, 'Por favor, use um e-mail válido']
+    },
+    phone: {
+        type: String,
+        required: [true, 'O telemóvel é obrigatório']
     },
     password: {
         type: String,
-        required: [true, 'Senha é obrigatória'],
-        select: false // Nunca retorna a senha nas consultas normais (Segurança)
+        required: [true, 'A senha é obrigatória'],
+        minlength: 8,
+        select: false 
     },
-    phone: {
-        type: String, // Número M-Pesa / E-Mola principal
-        required: [true, 'Número de telemóvel é obrigatório'],
-        unique: true
+    // SISTEMA DE CONTACTO VERIFICADO (OTP ZERO CUSTO)
+    isContactVerified: {
+        type: Boolean,
+        default: false
     },
-    // Carteira Virtual (Valores críticos - controlados apenas pelo backend)
-    wallet: {
-        availableBalance: { type: Number, default: 0 }, // Saldo para saque
-        escrowBalance: { type: Number, default: 0 },    // Saldo retido (Garantia 24h)
-        totalRevenue: { type: Number, default: 0 }      // Todo o dinheiro já processado
+    otpCode: {
+        type: String // Guarda o código de 6 dígitos
     },
-    // KYC - Conheça o seu Cliente
+    otpExpires: {
+        type: Date // Validade do código (ex: 10 minutos)
+    },
+    // SISTEMA DE NÍVEIS DE REPUTAÇÃO
+    reputation: {
+        type: String,
+        enum: ['bronze', 'prata', 'ouro', 'premium'],
+        default: 'bronze'
+    },
+    // SISTEMA AVANÇADO DE KYC E IDENTIDADE
     kyc: {
         status: {
             type: String,
-            enum: ['pendente', 'em_analise', 'aprovado', 'rejeitado'],
-            default: 'pendente'
+            enum: ['nao_iniciado', 'pendente', 'aprovado', 'rejeitado', 'correcao_solicitada'],
+            default: 'nao_iniciado'
         },
-        biNumber: { type: String, select: false },
-        nuit: { type: String, select: false }
+        biNumber: String,
+        nuit: String,
+        documentFrontUrl: String,      // Frente do BI
+        documentBackUrl: String,       // Verso do BI
+        selfieUrl: String,             // Rosto do Vendedor
+        selfieWithPaperUrl: String,    // Rosto + BI + Papel (FluxoMoz Data)
+        adminMessage: String           // Motivo da rejeição ou correção
     },
-    role: {
-        type: String,
-        enum: ['vendedor', 'admin'],
-        default: 'vendedor'
+    wallet: {
+        availableBalance: { type: Number, default: 0 },
+        escrowBalance: { type: Number, default: 0 },
+        totalRevenue: { type: Number, default: 0 }
     },
     affiliateCode: {
         type: String,
         unique: true
     }
 }, {
-    timestamps: true // Adiciona createdAt e updatedAt automaticamente
+    timestamps: true
 });
 
-// Encriptar a senha antes de salvar no banco
-userSchema.pre('save', async function (next) {
+// Encriptação de senha antes de salvar no MongoDB (Bcrypt)
+userSchema.pre('save', async function(next) {
     if (!this.isModified('password')) return next();
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
+    this.password = await bcrypt.hash(this.password, 12);
     next();
 });
 
-// Método para verificar se a senha digitada bate com o hash salvo
-userSchema.methods.matchPassword = async function (enteredPassword) {
+// Método para verificar a senha
+userSchema.methods.matchPassword = async function(enteredPassword) {
     return await bcrypt.compare(enteredPassword, this.password);
 };
 

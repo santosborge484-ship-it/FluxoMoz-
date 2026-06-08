@@ -1,77 +1,119 @@
-// Caminhos corrigidos para a mesma pasta
 const User = require('./user');
-const generateToken = require('./generateToken');
+const jwt = require('jsonwebtoken');
+const crypto = require('crypto'); // Biblioteca nativa do Node para gerar códigos seguros
 
-// @desc    Registar novo vendedor
+const generateToken = (id) => {
+    return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRE });
+};
+
+// Função auxiliar para gerar OTP de 6 dígitos
+const generateOTP = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString(); 
+};
+
+// @desc    Registar novo vendedor (Etapa 1 e 2 do Blueprint)
 // @route   POST /api/auth/register
 // @access  Public
-exports.registerUser = async (req, res) => {
+exports.register = async (req, res) => {
     try {
-        const { name, email, password, phone } = req.body;
+        const { name, email, phone, password } = req.body;
 
         const userExists = await User.findOne({ $or: [{ email }, { phone }] });
-
         if (userExists) {
-            return res.status(400).json({ 
-                status: 'error', 
-                message: 'Já existe uma conta com este e-mail ou número de telefone.' 
-            });
+            return res.status(400).json({ status: 'error', message: 'E-mail ou Telemóvel já estão em uso.' });
         }
 
-        const baseName = name.split(' ')[0].toUpperCase();
-        const affiliateCode = `${baseName}${Math.floor(1000 + Math.random() * 9000)}`;
+        const affiliateCode = `AFF-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+        
+        // Gera o OTP de 6 dígitos e define validade para 15 minutos
+        const otpCode = generateOTP();
+        const otpExpires = new Date(Date.now() + 15 * 60 * 1000); 
 
         const user = await User.create({
-            name,
-            email,
-            password,
-            phone,
-            affiliateCode
+            name, email, phone, password, affiliateCode, otpCode, otpExpires
         });
 
-        if (user) {
-            res.status(201).json({
-                status: 'success',
-                data: {
-                    _id: user._id,
-                    name: user.name,
-                    email: user.email,
-                    role: user.role,
-                    token: generateToken(user._id)
-                }
-            });
-        } else {
-            res.status(400).json({ status: 'error', message: 'Dados de usuário inválidos.' });
-        }
+        // NOTA DE CUSTO ZERO: Num sistema pago, enviaríamos um SMS aqui. 
+        // Para testarmos e não gastarmos dinheiro, vamos devolver o OTP na resposta
+        // para que o Frontend consiga simular o envio.
+        res.status(201).json({
+            status: 'success',
+            message: 'Registo concluído. Verifique o seu código OTP.',
+            data: {
+                userId: user._id,
+                _development_otp: otpCode // Removeremos isto quando ativarmos os emails
+            }
+        });
     } catch (error) {
-        res.status(500).json({ status: 'error', message: 'Erro no servidor: ' + error.message });
+        res.status(500).json({ status: 'error', message: 'Erro ao registar: ' + error.message });
     }
 };
 
-// @desc    Autenticar vendedor & obter token
+// @desc    Verificar o código OTP (Contacto Verificado)
+// @route   POST /api/auth/verify-otp
+// @access  Public
+exports.verifyOtp = async (req, res) => {
+    try {
+        const { userId, otpCode } = req.body;
+
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ status: 'error', message: 'Utilizador não encontrado.' });
+
+        if (user.isContactVerified) {
+            return res.status(400).json({ status: 'error', message: 'Contacto já verificado.' });
+        }
+
+        if (user.otpCode !== otpCode || user.otpExpires < new Date()) {
+            return res.status(400).json({ status: 'error', message: 'Código inválido ou expirado.' });
+        }
+
+        // Marca como verificado e limpa o código
+        user.isContactVerified = true;
+        user.otpCode = undefined;
+        user.otpExpires = undefined;
+        await user.save();
+
+        const token = generateToken(user._id);
+
+        res.status(200).json({
+            status: 'success',
+            message: 'Contacto verificado com sucesso!',
+            data: { token, name: user.name }
+        });
+    } catch (error) {
+        res.status(500).json({ status: 'error', message: 'Erro ao verificar código.' });
+    }
+};
+
+// @desc    Acesso Seguro ao Painel
 // @route   POST /api/auth/login
 // @access  Public
-exports.authUser = async (req, res) => {
+exports.login = async (req, res) => {
     try {
         const { email, password } = req.body;
 
         const user = await User.findOne({ email }).select('+password');
-
-        if (user && (await user.matchPassword(password))) {
-            res.json({
-                status: 'success',
-                data: {
-                    _id: user._id,
-                    name: user.name,
-                    email: user.email,
-                    role: user.role,
-                    token: generateToken(user._id)
-                }
-            });
-        } else {
-            res.status(401).json({ status: 'error', message: 'E-mail ou senha inválidos.' });
+        if (!user || !(await user.matchPassword(password))) {
+            return res.status(401).json({ status: 'error', message: 'E-mail ou senha incorretos.' });
         }
+
+        // Bloqueia o login se o OTP inicial nunca tiver sido validado
+        if (!user.isContactVerified) {
+            return res.status(403).json({ 
+                status: 'error', 
+                message: 'A sua conta precisa ser verificada.', 
+                requiresOtp: true,
+                userId: user._id
+            });
+        }
+
+        const token = generateToken(user._id);
+
+        res.status(200).json({
+            status: 'success',
+            data: { token, name: user.name, kycStatus: user.kyc.status }
+        });
     } catch (error) {
-        res.status(500).json({ status: 'error', message: 'Erro no servidor: ' + error.message });
+        res.status(500).json({ status: 'error', message: 'Erro ao fazer login: ' + error.message });
     }
 };

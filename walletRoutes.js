@@ -2,10 +2,12 @@ const express = require('express');
 const router = express.Router();
 
 const { getWalletBalance, requestWithdrawal } = require('./walletController');
-const { protect } = require('./authMiddleware');
+const { protect, requireKYC } = require('./authMiddleware');
 
-// Rotas da Carteira (Todas requerem que o vendedor esteja logado)
-router.get('/', protect, getWalletBalance); // Ver saldo
-router.post('/withdraw', protect, requestWithdrawal); // Pedir saque
+// Rotas da Carteira
+router.get('/', protect, getWalletBalance); // Pode ver o saldo da carteira (Acesso Limitado)
+
+// BARREIRA ATIVA: Apenas vendedores verificados podem pedir saques do M-Pesa/E-Mola
+router.post('/withdraw', protect, requireKYC, requestWithdrawal);
 
 module.exports = router;
