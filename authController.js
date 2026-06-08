@@ -1,6 +1,6 @@
 const User = require('./user');
 const jwt = require('jsonwebtoken');
-const crypto = require('crypto'); // Biblioteca nativa do Node para gerar códigos seguros
+const crypto = require('crypto'); 
 
 const generateToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRE });
@@ -11,7 +11,7 @@ const generateOTP = () => {
     return Math.floor(100000 + Math.random() * 900000).toString(); 
 };
 
-// @desc    Registar novo vendedor (Etapa 1 e 2 do Blueprint)
+// @desc    Registar novo vendedor
 // @route   POST /api/auth/register
 // @access  Public
 exports.register = async (req, res) => {
@@ -33,15 +33,12 @@ exports.register = async (req, res) => {
             name, email, phone, password, affiliateCode, otpCode, otpExpires
         });
 
-        // NOTA DE CUSTO ZERO: Num sistema pago, enviaríamos um SMS aqui. 
-        // Para testarmos e não gastarmos dinheiro, vamos devolver o OTP na resposta
-        // para que o Frontend consiga simular o envio.
         res.status(201).json({
             status: 'success',
             message: 'Registo concluído. Verifique o seu código OTP.',
             data: {
                 userId: user._id,
-                _development_otp: otpCode // Removeremos isto quando ativarmos os emails
+                _development_otp: otpCode 
             }
         });
     } catch (error) {

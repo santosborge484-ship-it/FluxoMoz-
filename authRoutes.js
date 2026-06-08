@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
 
-// Importa as funções do controlador na mesma pasta (raiz)
-const { registerUser, authUser } = require('./authController');
+const { register, login, verifyOtp } = require('./authController');
 
-// Rota POST para registar novo vendedor: /api/auth/register
-router.post('/register', registerUser);
+// Rotas Públicas de Autenticação da FluxoMoz
+router.post('/register', register);
+router.post('/login', login);
 
-// Rota POST para login: /api/auth/login
-router.post('/login', authUser);
+// NOVA ROTA: Verificação de Contacto (OTP)
+router.post('/verify-otp', verifyOtp);
 
 module.exports = router;
