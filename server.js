@@ -18,10 +18,10 @@ const app = express();
 // Conectar ao Banco de Dados MongoDB
 connectDB();
 
-// Middlewares Globais - COM PROTEÇÃO OOM (Limite de 10MB)
+// Middlewares Globais - LIMITE ALARGADO PARA 50MB (Para suportar as fotos KYC)
 app.use(cors());
-app.use(express.json({ limit: '10mb' })); 
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '50mb' })); 
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // === ROTAS DA API FLUXOMOZ ===
 app.use('/api/auth', authRoutes);
