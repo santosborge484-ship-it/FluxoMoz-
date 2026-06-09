@@ -18,9 +18,10 @@ function switchTab(type) {
     document.getElementById('auth-message').classList.add('hidden');
 }
 
-function showMessage(text, isSuccess = false) {
+// Alterado para aceitar HTML, permitindo a injeção de botões na mensagem
+function showMessage(htmlContent, isSuccess = false) {
     const msgBox = document.getElementById('auth-message');
-    msgBox.innerText = text;
+    msgBox.innerHTML = htmlContent;
     msgBox.className = `msg-box ${isSuccess ? 'msg-success' : 'msg-error'}`;
     msgBox.classList.remove('hidden');
 }
@@ -46,11 +47,15 @@ async function handleRegister(event) {
             // Guarda o ID temporariamente para a verificação OTP
             document.getElementById('temp-user-id').value = result.data.userId;
             
-            // AVISO DE TESTE: Exibe o código gerado no ecrã para não precisarmos de e-mail real agora
-            showMessage(`Registo concluído! O seu CÓDIGO DE TESTE é: ${result.data._development_otp}`, true);
+            // UX Premium: Mostra o código e um botão de ação manual
+            const successHtml = `
+                Registo concluído com sucesso!<br><br>
+                O seu CÓDIGO DE TESTE é:<br>
+                <strong style="font-size: 1.5rem; letter-spacing: 0.2em; color: #166534; display: block; margin: 10px 0;">${result.data._development_otp}</strong>
+                <button type="button" onclick="switchTab('otp')" class="btn btn-primary" style="width: 100%; margin-top: 10px; padding: 10px;">Já anotei, avançar</button>
+            `;
             
-            // Muda para o ecrã do OTP
-            setTimeout(() => { switchTab('otp'); }, 2000);
+            showMessage(successHtml, true);
         } else {
             showMessage(result.message);
         }
@@ -108,10 +113,15 @@ async function handleLogin(event) {
             localStorage.setItem('fluxomoz_user_name', result.data.name);
             window.location.href = 'dashboard.html';
         } else if (result.requiresOtp) {
-            // Se tentou entrar mas nunca verificou o OTP
+            // Se tentou entrar mas nunca verificou o OTP, dá a opção manual
             document.getElementById('temp-user-id').value = result.userId;
-            showMessage('A sua conta ainda precisa de ser verificada.', false);
-            setTimeout(() => { switchTab('otp'); }, 1500);
+            
+            const warnHtml = `
+                A sua conta ainda precisa de ser verificada.<br>
+                <button type="button" onclick="switchTab('otp')" class="btn btn-outline" style="width: 100%; margin-top: 15px; padding: 10px;">Fazer Verificação Agora</button>
+            `;
+            
+            showMessage(warnHtml, false);
         } else {
             showMessage(result.message);
         }
