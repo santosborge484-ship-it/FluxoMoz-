@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "description": "API Oficial do Marketplace FluxoMoz",
   "main": "server.js",
+  "private": true,
+  "license": "UNLICENSED",
   "scripts": {
     "start": "node server.js"
   },
@@ -14,6 +16,9 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.0.3",
     "node-cron": "^3.0.3"
+  },
+  "resolutions": {
+    "uuid": "^11.0.0"
   },
   "engines": {
     "node": ">=18.0.0"
