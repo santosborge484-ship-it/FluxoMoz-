@@ -1,7 +1,7 @@
 // app.js - Lógica principal do Frontend FluxoMoz
 
-// URL base da API (Em produção trocarás isto pelo teu domínio real)
-const API_URL = 'http://localhost:5000/api';
+// URL base da API ligada ao servidor oficial na Render
+const API_URL = 'https://fluxomoz.onrender.com/api';
 
 document.addEventListener('DOMContentLoaded', () => {
     initApp();

@@ -1,6 +1,7 @@
 // dashboard.js - Lógica Financeira Protegida do Lojista
 
-const API_URL = 'http://localhost:5000/api';
+// URL base da API ligada ao servidor oficial na Render
+const API_URL = 'https://fluxomoz.onrender.com/api';
 
 document.addEventListener('DOMContentLoaded', () => {
     checkAuthAndLoadDashboard();
