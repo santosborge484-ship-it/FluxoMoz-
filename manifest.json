@@ -1,0 +1,22 @@
+{
+  "name": "FluxoMoz Marketplace",
+  "short_name": "FluxoMoz",
+  "description": "A principal infraestrutura digital de vendas e pagamentos para Moçambique.",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#F8FAFC",
+  "theme_color": "#2563EB",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "assets/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
